@@ -128,7 +128,6 @@ handle_cast(_Msg, State) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_info ({udp, Socket, _IP, 68, Packet}, State = #state{socket=Socket, handlers = Handler}) ->
-    lager:info("Received package from: ~p", [IP]),
     case dhcp_package:decode(Packet) of
         {ok, D} ->
             MT = D#dhcp_package.message_type,
