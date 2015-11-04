@@ -128,6 +128,7 @@ handle_cast(_Msg, State) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_info ({udp, Socket, _IP, 68, Packet}, State = #state{socket=Socket, handlers = Handler}) ->
+    lager:info("Received package from: ~p", [IP]),
     case dhcp_package:decode(Packet) of
         {ok, D} ->
             MT = D#dhcp_package.message_type,
@@ -140,9 +141,11 @@ handle_info ({udp, Socket, _IP, 68, Packet}, State = #state{socket=Socket, handl
                             gen_fsm:send_event(Pid, D),
                             ets:insert(?TBL, {ID, Pid});
                         _ ->
+                            lager:debug("Did not find a matching handler"),
                             ok
                     end;
                 {[{ID, Pid}], _} ->
+                    lager:debug("Handling for ID,Pid match"),
                     case  process_info(Pid) of
                         undefined ->
                             case match(D, Handler) of
@@ -151,9 +154,11 @@ handle_info ({udp, Socket, _IP, 68, Packet}, State = #state{socket=Socket, handl
                                     gen_fsm:send_event(Pid1, D),
                                     ets:insert(?TBL, {ID, Pid1});
                                 _ ->
+                                    lager:debug("Did not find a process_info handler"),
                                     ok
                             end;
                         _ ->
+                            lager:debug("Sending event to pid ~p: ~p", [Pid, D]),
                             gen_fsm:send_event(Pid, D)
                     end;
                 _ ->
@@ -163,7 +168,8 @@ handle_info ({udp, Socket, _IP, 68, Packet}, State = #state{socket=Socket, handl
             lager:warning("Decoding failed: ~p (~p)", [E, Packet])
     end,
     {noreply, State};
-handle_info(_Info, State) ->
+handle_info(Info, State) ->
+    lager:debug("Unhandled info message: ~p", [Info]),
     {noreply, State}.
 
 %%--------------------------------------------------------------------
