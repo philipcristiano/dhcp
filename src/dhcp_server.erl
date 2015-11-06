@@ -74,8 +74,12 @@ register_handler(Handler, Spec = {_,_,_}) when is_atom(Handler)->
 %% @end
 %%--------------------------------------------------------------------
 init([]) ->
+    IName = application:get_env(dhcp, listen_interface, "eth0"),
+    {ok, [{addr, Addr}]} = inet:ifget(IName, [addr]),
+    lager:info("Listening on ~p", [Addr]),
     {ok, Socket} = gen_udp:open(67, [binary,
                                      inet,
+                                     {ip, Addr},
                                      {broadcast, true},
                                      {reuseaddr, true}]),
     ets:new(?TBL, [bag, {read_concurrency, true}, named_table]),
